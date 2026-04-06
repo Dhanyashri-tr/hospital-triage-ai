@@ -68,11 +68,14 @@ def reset():
 # REQUIRED ENDPOINT: STEP
 # ---------------------------
 @app.post("/step")
-def step():
+async def step(request: Request):
     global env
 
     if env is None:
-        return {"error": "Environment not initialized. Call /reset first."}
+        return {"error": "Call /reset first"}
+
+    # IMPORTANT: accept request body (even if unused)
+    _ = await request.json()
 
     observation = env.current_observation
     action = get_action(observation.observation)

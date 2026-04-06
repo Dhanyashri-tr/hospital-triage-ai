@@ -109,6 +109,12 @@ def main():
     print(f"Final Score: {final_score:.3f}")
     print("[END]")
 
+import time
+
+# KEEP CONTAINER ALIVE (VERY IMPORTANT)
+while True:
+    time.sleep(60)
+
 
 # -------------------------------
 if __name__ == "__main__":

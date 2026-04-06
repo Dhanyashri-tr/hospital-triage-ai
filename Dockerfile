@@ -1,19 +1,11 @@
-FROM python:3.10-slim
+FROM python:3.10
 
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
-
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy all files
 COPY . .
 
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Run inference
-CMD ["uvicorn", "inference:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 7860
+
+CMD ["uvicorn", "inference:app", "--host", "0.0.0.0", "--port", "7860"]

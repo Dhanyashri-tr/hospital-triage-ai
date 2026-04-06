@@ -2,17 +2,22 @@ import os
 from fastapi import FastAPI
 from hospital_env import HospitalTriageEnv, Action, ActionType
 
+# ---------------------------
 # REQUIRED ENV VARIABLES
+# ---------------------------
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN", "dummy")  # MUST NOT be None
 
+# ---------------------------
+# INIT APP
+# ---------------------------
 app = FastAPI()
 
 env = None
 
 # ---------------------------
-# TRIAGE LOGIC (SAFE)
+# TRIAGE LOGIC (RULE-BASED SAFE)
 # ---------------------------
 def get_action(obs):
     symptoms = " ".join(obs.symptoms).lower()
@@ -47,24 +52,27 @@ def get_action(obs):
     )
 
 # ---------------------------
-# REQUIRED ENDPOINTS
+# REQUIRED ENDPOINT: RESET
 # ---------------------------
-
 @app.post("/reset")
 def reset():
     global env
     env = HospitalTriageEnv()
     observation = env.reset()
 
-    return {
-        "patient_id": observation.observation.patient_id,
-        "symptoms": observation.observation.symptoms
-    }
+    # IMPORTANT: return full OpenEnv format
+    return observation.model_dump()
 
 
+# ---------------------------
+# REQUIRED ENDPOINT: STEP
+# ---------------------------
 @app.post("/step")
 def step():
     global env
+
+    if env is None:
+        return {"error": "Environment not initialized. Call /reset first."}
 
     observation = env.current_observation
     action = get_action(observation.observation)
@@ -72,8 +80,16 @@ def step():
     next_obs, reward, done, info = env.step(action)
 
     return {
-        "action": action.action_type.value,
-        "priority": action.priority_score,
+        "observation": next_obs.model_dump() if next_obs else None,
         "reward": reward,
-        "done": done
+        "done": done,
+        "info": info,
     }
+
+
+# ---------------------------
+# OPTIONAL HEALTH CHECK
+# ---------------------------
+@app.get("/")
+def root():
+    return {"status": "running"}

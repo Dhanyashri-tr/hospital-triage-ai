@@ -2,24 +2,14 @@ import os
 from fastapi import FastAPI, Request
 from hospital_env import HospitalTriageEnv, Action, ActionType
 
-# ---------------------------
-# REQUIRED ENV VARIABLES
-# ---------------------------
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-HF_TOKEN = os.getenv("HF_TOKEN", "dummy")  # MUST NOT be None
-
-# ---------------------------
-# INIT APP
-# ---------------------------
 app = FastAPI()
 
-env = None
+# -------------------------------
+# RULE-BASED DECISION FUNCTION
+# -------------------------------
+def get_triage_decision(observation):
+    obs = observation.observation
 
-# ---------------------------
-# TRIAGE LOGIC (RULE-BASED SAFE)
-# ---------------------------
-def get_action(obs):
     symptoms = " ".join(obs.symptoms).lower()
     vitals = obs.vitals
 
@@ -43,56 +33,62 @@ def get_action(obs):
     ):
         action_type = ActionType.MONITOR
         priority = 0.6
-        reasoning = "Moderate symptoms"
+        reasoning = "Moderate symptoms, needs monitoring"
 
-    return Action(
-        action_type=action_type,
-        priority_score=priority,
-        reasoning=reasoning,
-    )
+    return action_type.value, priority, reasoning
 
-# ---------------------------
-# REQUIRED ENDPOINT: RESET
-# ---------------------------
+
+# -------------------------------
+# GLOBAL ENV
+# -------------------------------
+env = None
+
+
+# -------------------------------
+# ROOT ENDPOINT
+# -------------------------------
+@app.get("/")
+def home():
+    return {"status": "ok"}
+
+
+# -------------------------------
+# RESET ENDPOINT (IMPORTANT)
+# -------------------------------
 @app.post("/reset")
-def reset():
+async def reset():
     global env
     env = HospitalTriageEnv()
     observation = env.reset()
 
-    # IMPORTANT: return full OpenEnv format
-    return observation.model_dump()
+    return {"status": "reset"}
 
 
-# ---------------------------
-# REQUIRED ENDPOINT: STEP
-# ---------------------------
+# -------------------------------
+# STEP ENDPOINT (IMPORTANT)
+# -------------------------------
 @app.post("/step")
 async def step(request: Request):
     global env
 
     if env is None:
-        return {"error": "Call /reset first"}
+        env = HospitalTriageEnv()
+        observation = env.reset()
+    else:
+        observation = env.current_observation
 
-    # IMPORTANT: accept request body (even if unused)
-    _ = await request.json()
+    action_type, priority, reasoning = get_triage_decision(observation)
 
-    observation = env.current_observation
-    action = get_action(observation.observation)
+    action = Action(
+        action_type=ActionType(action_type),
+        priority_score=priority,
+        reasoning=reasoning,
+    )
 
-    next_obs, reward, done, info = env.step(action)
+    next_observation, reward, done, info = env.step(action)
 
     return {
-        "observation": next_obs.model_dump() if next_obs else None,
-        "reward": reward,
-        "done": done,
-        "info": info,
+        "action": action_type,
+        "priority_score": priority,
+        "reasoning": reasoning
     }
-
-
-# ---------------------------
-# OPTIONAL HEALTH CHECK
-# ---------------------------
-@app.get("/")
-def root():
-    return {"status": "running"}

@@ -113,3 +113,37 @@ def main():
 # -------------------------------
 if __name__ == "__main__":
     main()
+    # -------------------------------
+# OPENENV COMPATIBILITY (REQUIRED)
+# -------------------------------
+
+_env_instance = None
+
+def reset():
+    global _env_instance
+    _env_instance = HospitalTriageEnv()
+    obs = _env_instance.reset()
+    return obs
+
+
+def step(action_dict):
+    global _env_instance
+
+    action = Action(
+        action_type=ActionType(action_dict["action_type"]),
+        priority_score=action_dict["priority_score"],
+        reasoning=action_dict.get("reasoning", "")
+    )
+
+    obs, reward, done, info = _env_instance.step(action)
+
+    return {
+        "observation": obs,
+        "reward": reward,
+        "done": done,
+        "info": info
+    }
+
+
+def state():
+    return {"status": "running"}

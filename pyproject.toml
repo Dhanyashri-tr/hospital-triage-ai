@@ -1,8 +1,19 @@
 [project]
 name = "hospital-triage-ai"
 version = "0.1.0"
-description = "Hospital triage system"
+description = "Hospital triage system for OpenEnv"
 dependencies = [
     "fastapi",
-    "uvicorn"
+    "uvicorn",
+    "openenv-core>=0.2.0",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0"
 ]
+
+[project.scripts]
+server = "server.app:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

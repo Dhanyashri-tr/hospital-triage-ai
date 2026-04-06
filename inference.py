@@ -43,7 +43,6 @@ def get_triage_decision(observation):
 # -------------------------------
 env = None
 
-
 # -------------------------------
 # ROOT ENDPOINT
 # -------------------------------
@@ -75,7 +74,9 @@ async def step(request: Request):
         env = HospitalTriageEnv()
         observation = env.reset()
     else:
-        observation = env.current_observation
+        observation = env.current_case.observation if env.current_case else None
+        if observation is None:
+            observation = env.reset()
 
     action_type, priority, reasoning = get_triage_decision(observation)
 
@@ -88,7 +89,27 @@ async def step(request: Request):
     next_observation, reward, done, info = env.step(action)
 
     return {
-        "action": action_type,
-        "priority_score": priority,
-        "reasoning": reasoning
+        "reward": reward,
+        "done": done,
+        "info": info
     }
+
+# -------------------------------
+# STATE ENDPOINT
+# -------------------------------
+@app.get("/state")
+async def state():
+    global env
+    
+    if env is None or env.current_case is None:
+        return {"patient_id": "", "symptoms": []}
+    
+    obs = env.current_case.observation
+    return {
+        "patient_id": obs.patient_id,
+        "symptoms": obs.symptoms
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

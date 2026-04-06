@@ -1,0 +1,24 @@
+name: ai-hospital-triage
+version: 1.0.0
+
+entry_point: hospital_env.env:HospitalTriageEnv
+
+description: AI-powered hospital triage system for emergency room patient prioritization
+
+tasks:
+  - name: easy
+    difficulty: EASY
+  - name: medium
+    difficulty: MEDIUM
+  - name: hard
+    difficulty: HARD
+
+observation_space:
+  type: dict
+
+action_space:
+  type: dict
+
+evaluation:
+  episodes: 10
+  max_steps_per_episode: 10

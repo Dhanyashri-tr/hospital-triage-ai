@@ -44,6 +44,7 @@ def get_triage_decision(observation):
 # -------------------------------
 env = None
 
+
 # -------------------------------
 # ROOT ENDPOINT
 # -------------------------------
@@ -53,19 +54,23 @@ def home():
 
 
 # -------------------------------
-# RESET ENDPOINT (IMPORTANT)
+# RESET ENDPOINT (FIXED ✅)
 # -------------------------------
 @app.post("/reset")
-async def reset():
+def reset():
     global env
-    env = HospitalTriageEnv()
-    observation = env.reset()
 
-    return {"status": "reset"}
+    env = HospitalTriageEnv()   # ✅ correct class
+    observation = env.reset()   # ✅ MUST call reset
+
+    return {
+        "message": "Environment reset successful",
+        "patient_id": observation.patient_id if hasattr(observation, "patient_id") else ""
+    }
 
 
 # -------------------------------
-# STEP ENDPOINT (IMPORTANT)
+# STEP ENDPOINT
 # -------------------------------
 @app.post("/step")
 async def step(request: Request):
@@ -95,6 +100,7 @@ async def step(request: Request):
         "info": info
     }
 
+
 # -------------------------------
 # STATE ENDPOINT
 # -------------------------------
@@ -111,6 +117,10 @@ async def state():
         "symptoms": obs.symptoms
     }
 
+
+# -------------------------------
+# RUN SERVER (FIXED PORT ✅)
+# -------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)

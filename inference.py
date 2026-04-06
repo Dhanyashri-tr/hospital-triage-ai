@@ -10,10 +10,13 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 HF_TOKEN = os.getenv("HF_TOKEN")  # no default
 
 # OpenAI Client (REQUIRED EVEN IF NOT USED)
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+client = None
+
+if os.getenv("OPENAI_API_KEY"):
+    client = OpenAI(
+        base_url=API_BASE_URL,
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
 
 # -------------------------------
 # RULE-BASED TRIAGE LOGIC (SAFE)

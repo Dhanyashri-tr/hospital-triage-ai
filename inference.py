@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from hospital_env import HospitalTriageEnv, Action, ActionType
 
 # ---------------------------

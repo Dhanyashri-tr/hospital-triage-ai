@@ -1,3 +1,4 @@
+print("FILE STARTED")
 import os
 from hospital_env import HospitalTriageEnv, Action, ActionType
 from openai import OpenAI
@@ -8,7 +9,6 @@ from openai import OpenAI
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 HF_TOKEN = os.getenv("HF_TOKEN")  # no default
-
 # OpenAI Client (REQUIRED EVEN IF NOT USED)
 client = None
 
@@ -63,6 +63,7 @@ def get_triage_decision(observation, client=None, model_name=None):
 # -------------------------------
 def main():
     print("[START]")
+    print(" MAIN STARTED")
 
     env = HospitalTriageEnv()
     observation = env.reset()
@@ -117,9 +118,6 @@ while True:
 
 
 # -------------------------------
-if __name__ == "__main__":
-    main()
-    # -------------------------------
 # OPENENV COMPATIBILITY (REQUIRED)
 # -------------------------------
 
@@ -153,3 +151,6 @@ def step(action_dict):
 
 def state():
     return {"status": "running"}
+if __name__ == "__main__":
+    main()
+    # -------------------------------

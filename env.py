@@ -1,11 +1,11 @@
 from typing import Dict, Any, Tuple, Optional, List
 import random
-from .models import (
+from models import (
     Observation, Action, Reward, PatientCase, EnvironmentState,
     ActionType
 )
-from .tasks import HospitalTriageTasks
-from .grader import HospitalTriageGrader
+from tasks import HospitalTriageTasks
+from grader import HospitalTriageGrader
 
 
 class HospitalTriageEnv:

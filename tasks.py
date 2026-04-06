@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 import uuid
-from .models import PatientCase, Observation, ActionType, Vitals
+from models import PatientCase, Observation, ActionType, Vitals
 
 
 class HospitalTriageTasks:

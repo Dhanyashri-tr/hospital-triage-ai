@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from .models import Action, Reward, PatientCase, ActionType
+from models import Action, Reward, PatientCase, ActionType
 
 
 class HospitalTriageGrader:

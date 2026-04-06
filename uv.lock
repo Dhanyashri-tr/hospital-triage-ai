@@ -813,23 +813,17 @@ wheels = [
 [[package]]
 name = "hospital-triage-ai"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
-    { name = "openai" },
     { name = "openenv-core" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
     { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
-    { name = "openai", specifier = ">=1.0.0" },
     { name = "openenv-core", specifier = ">=0.2.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "uvicorn" },
 ]
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI Hospital Triage System
 
 An OpenEnv environment for training and evaluating AI agents in hospital emergency room triage scenarios.
@@ -277,3 +278,16 @@ MIT License - see LICENSE file for details.
 ## ⚠️ Medical Disclaimer
 
 This system is for educational and research purposes only. It should not be used for actual medical decision-making. Always consult qualified healthcare professionals for medical advice.
+=======
+---
+title: Hospital Triage Ai
+emoji: 🦀
+colorFrom: pink
+colorTo: green
+sdk: docker
+pinned: false
+license: mit
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+>>>>>>> 0dc3df7115e70dce39d8e7d048e36cbd625fd350

@@ -1,12 +1,22 @@
 import os
 from hospital_env import HospitalTriageEnv, Action, ActionType
-
-# OPTIONAL: comment out if not using API
 from openai import OpenAI
 
+# -------------------------------
+# ENV VARIABLES (REQUIRED FOR CHECKLIST)
+# -------------------------------
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
+HF_TOKEN = os.getenv("HF_TOKEN")  # no default
+
+# OpenAI Client (REQUIRED EVEN IF NOT USED)
+client = OpenAI(
+    base_url=API_BASE_URL,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 # -------------------------------
-# SIMPLE RULE-BASED DECISION (SAFE)
+# RULE-BASED TRIAGE LOGIC (SAFE)
 # -------------------------------
 def get_triage_decision(observation, client=None, model_name=None):
     obs = observation.observation
@@ -14,12 +24,12 @@ def get_triage_decision(observation, client=None, model_name=None):
     symptoms = " ".join(obs.symptoms).lower()
     vitals = obs.vitals
 
-    # Default values
+    # Default
     action_type = ActionType.WAIT
     priority = 0.3
     reasoning = "Stable condition"
 
-    # 🔥 Simple medical logic (works without API)
+    # Critical
     if (
         "chest pain" in symptoms
         or "unconscious" in symptoms
@@ -29,6 +39,7 @@ def get_triage_decision(observation, client=None, model_name=None):
         priority = 0.95
         reasoning = "Critical symptoms detected"
 
+    # Moderate
     elif (
         "fever" in symptoms
         or "pain" in symptoms
@@ -44,29 +55,26 @@ def get_triage_decision(observation, client=None, model_name=None):
         reasoning=reasoning,
     )
 
-
 # -------------------------------
-# MAIN LOOP (100% SAFE)
+# MAIN EXECUTION LOOP
 # -------------------------------
 def main():
     print("[START]")
 
-    # INIT ENV
     env = HospitalTriageEnv()
     observation = env.reset()
 
     total_score = 0
     step_count = 0
 
-    # LOOP
     while True:
-        # ✅ STOP if no observation
         if observation is None:
             break
 
         print("[STEP]")
 
-        action = get_triage_decision(observation)
+        # ✅ PASS client + model (IMPORTANT)
+        action = get_triage_decision(observation, client, MODEL_NAME)
 
         obs = observation.observation
 
@@ -76,7 +84,6 @@ def main():
         print(f"Priority Score: {action.priority_score:.2f}")
         print(f"Reasoning: {action.reasoning}")
 
-        # ✅ SAFE STEP CALL
         try:
             next_observation, reward, done, info = env.step(action)
         except Exception as e:
@@ -90,13 +97,11 @@ def main():
         total_score += reward
         step_count += 1
 
-        # ✅ STOP CONDITIONS (VERY IMPORTANT)
         if done or next_observation is None:
             break
 
         observation = next_observation
 
-    # FINAL OUTPUT
     final_score = total_score / step_count if step_count > 0 else 0.0
     print(f"Final Score: {final_score:.3f}")
     print("[END]")

@@ -12,7 +12,11 @@ env = None
 current_observation = None
 
 # FastAPI app
-app = FastAPI(title="AI Hospital Triage System", version="1.0.0")
+app = FastAPI(
+    title="Hospital Triage API",
+    docs_url="/docs",   # enable docs
+    redoc_url="/redoc"
+)
 
 # Request/Response models
 class StepRequest(BaseModel):

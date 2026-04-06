@@ -1,103 +1,210 @@
 import os
-import time
-print("FILE STARTED")
+import json
+import uuid
+from typing import Dict, Any, List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import uvicorn
+from hospital_env import HospitalTriageEnv, Action, ActionType, Observation
 
-from hospital_env import HospitalTriageEnv, Action, ActionType
+# Global variables
+env = None
+current_observation = None
 
-# REQUIRED ENV VARIABLES
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-HF_TOKEN = os.getenv("HF_TOKEN")
+# FastAPI app
+app = FastAPI(title="AI Hospital Triage System", version="1.0.0")
 
+# Request/Response models
+class StepRequest(BaseModel):
+    action: str
+    priority_score: float
+    reasoning: str
 
-# RULE-BASED TRIAGE
-def get_triage_decision(observation):
-    obs = observation.observation
+class StepResponse(BaseModel):
+    reward: float
+    done: bool
+    info: Dict[str, Any]
 
-    symptoms = " ".join(obs.symptoms).lower()
-    vitals = obs.vitals
+class StateResponse(BaseModel):
+    patient_id: str
+    symptoms: List[str]
 
-    action_type = ActionType.WAIT
-    priority = 0.3
-    reasoning = "Stable condition"
+class ResetResponse(BaseModel):
+    status: str
 
-    if (
-        "chest pain" in symptoms
-        or "unconscious" in symptoms
-        or (vitals and vitals.oxygen_saturation and vitals.oxygen_saturation < 90)
-    ):
-        action_type = ActionType.TREAT_NOW
-        priority = 0.95
-        reasoning = "Critical symptoms detected"
-
-    elif (
-        "fever" in symptoms
-        or "pain" in symptoms
-        or (vitals and vitals.heart_rate and vitals.heart_rate > 100)
-    ):
-        action_type = ActionType.MONITOR
-        priority = 0.6
-        reasoning = "Moderate symptoms, needs monitoring"
-
+def rule_based_triage(observation: Observation) -> Action:
+    """
+    Rule-based triage decision without calling OpenAI API.
+    """
+    symptoms_lower = [s.lower() for s in observation.symptoms]
+    vitals = observation.vitals
+    
+    # Critical conditions - TREAT_NOW
+    critical_symptoms = {
+        "chest pain", "unconscious", "loss of consciousness", 
+        "difficulty breathing", "shortness of breath", "severe bleeding",
+        "stroke", "heart attack", "confusion"
+    }
+    
+    if any(symptom in symptoms_lower for symptom in critical_symptoms):
+        return Action(
+            action_type=ActionType.TREAT_NOW,
+            priority_score=0.9,
+            reasoning="Critical symptoms detected requiring immediate attention"
+        )
+    
+    # Check vitals for critical conditions
+    if vitals.oxygen_saturation and vitals.oxygen_saturation < 90:
+        return Action(
+            action_type=ActionType.TREAT_NOW,
+            priority_score=0.95,
+            reasoning="Low oxygen saturation requires immediate intervention"
+        )
+    
+    if vitals.blood_pressure_systolic and vitals.blood_pressure_systolic < 90:
+        return Action(
+            action_type=ActionType.TREAT_NOW,
+            priority_score=0.9,
+            reasoning="Low blood pressure indicates possible shock"
+        )
+    
+    # Moderate conditions - MONITOR
+    moderate_symptoms = {
+        "fever", "pain", "high heart rate", "dehydration",
+        "infection", "asthma", "wheezing", "dizziness"
+    }
+    
+    if any(symptom in symptoms_lower for symptom in moderate_symptoms):
+        return Action(
+            action_type=ActionType.MONITOR,
+            priority_score=0.6,
+            reasoning="Moderate symptoms requiring monitoring and evaluation"
+        )
+    
+    # Check vitals for moderate conditions
+    if vitals.heart_rate and vitals.heart_rate > 100:
+        return Action(
+            action_type=ActionType.MONITOR,
+            priority_score=0.6,
+            reasoning="Elevated heart rate requires monitoring"
+        )
+    
+    if vitals.temperature and vitals.temperature > 38.0:
+        return Action(
+            action_type=ActionType.MONITOR,
+            priority_score=0.5,
+            reasoning="Fever requires monitoring"
+        )
+    
+    # Mild conditions - WAIT
     return Action(
-        action_type=action_type,
-        priority_score=priority,
-        reasoning=reasoning,
+        action_type=ActionType.WAIT,
+        priority_score=0.2,
+        reasoning="Mild symptoms that can wait for routine care"
     )
 
+@app.post("/reset", response_model=ResetResponse)
+async def reset():
+    """Reset the environment and return initial observation."""
+    global env, current_observation
+    
+    try:
+        # Initialize environment
+        env = HospitalTriageEnv(difficulty="MEDIUM", max_steps=10)
+        current_observation = env.reset()
+        
+        return ResetResponse(status="reset done")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
 
-def main():
-    print(" MAIN STARTED")
-    print("[START]")
+@app.post("/step", response_model=StepResponse)
+async def step(request: StepRequest):
+    """Execute a step in the environment."""
+    global env, current_observation
+    
+    if env is None or current_observation is None:
+        raise HTTPException(status_code=400, detail="Environment not reset. Call /reset first.")
+    
+    try:
+        # Create action from request
+        action = Action(
+            action_type=ActionType(request.action),
+            priority_score=request.priority_score,
+            reasoning=request.reasoning
+        )
+        
+        # Execute step
+        next_observation, reward, done, info = env.step(action)
+        
+        # Update current observation if not done
+        if not done:
+            current_observation = next_observation
+        
+        return StepResponse(
+            reward=reward,
+            done=done,
+            info=info
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Step failed: {str(e)}")
 
-    env = HospitalTriageEnv()
-    observation = env.reset()
+@app.get("/state", response_model=StateResponse)
+async def get_state():
+    """Get current patient state."""
+    global current_observation
+    
+    if current_observation is None:
+        raise HTTPException(status_code=400, detail="No active observation. Call /reset first.")
+    
+    try:
+        return StateResponse(
+            patient_id=current_observation.patient_id,
+            symptoms=current_observation.symptoms
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"State retrieval failed: {str(e)}")
 
-    total_score = 0
-    step_count = 0
+@app.get("/")
+async def root():
+    """Root endpoint for health check."""
+    return {"message": "AI Hospital Triage System API", "version": "1.0.0"}
 
-    while True:
-        if observation is None:
-            break
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "healthy", "environment_loaded": env is not None}
 
-        print("[STEP]")
+# Environment variables validation
+def validate_environment():
+    """Ensure required environment variables exist."""
+    required_vars = ["API_BASE_URL", "MODEL_NAME", "HF_TOKEN"]
+    missing_vars = []
+    
+    for var in required_vars:
+        if var not in os.environ:
+            missing_vars.append(var)
+    
+    if missing_vars:
+        print(f"Warning: Missing environment variables: {missing_vars}")
+        print("Setting default values...")
+        
+        # Set default values if missing
+        if "API_BASE_URL" not in os.environ:
+            os.environ["API_BASE_URL"] = "https://api.openai.com/v1"
+        if "MODEL_NAME" not in os.environ:
+            os.environ["MODEL_NAME"] = "gpt-3.5-turbo"
+        if "HF_TOKEN" not in os.environ:
+            os.environ["HF_TOKEN"] = "dummy-token"
 
-        action = get_triage_decision(observation)
-        obs = observation.observation
-
-        print(f"Patient ID: {obs.patient_id}")
-        print(f"Symptoms: {', '.join(obs.symptoms)}")
-        print(f"Action: {action.action_type.value}")
-        print(f"Priority Score: {action.priority_score:.2f}")
-        print(f"Reasoning: {action.reasoning}")
-
-        try:
-            next_observation, reward, done, info = env.step(action)
-        except Exception as e:
-            print("Error:", e)
-            break
-
-        print(f"Reward: {reward:.3f}")
-        print(f"Cumulative Score: {info.get('current_score', 0):.3f}")
-        print(f"Cases Completed: {info.get('cases_completed', 0)}")
-
-        total_score += reward
-        step_count += 1
-
-        if done or next_observation is None:
-            break
-
-        observation = next_observation
-
-    final_score = total_score / step_count if step_count > 0 else 0.0
-    print(f"Final Score: {final_score:.3f}")
-    print("[END]")
-
-    # KEEP CONTAINER ALIVE
-    while True:
-        time.sleep(60)
-
-
-# 🔥 THIS LINE IS CRITICAL
 if __name__ == "__main__":
-    main()
+    # Validate environment variables
+    validate_environment()
+    
+    # Run FastAPI server
+    uvicorn.run(
+        "inference:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+        log_level="info"
+    )

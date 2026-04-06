@@ -1,38 +1,26 @@
-print("FILE STARTED")
 import os
-from hospital_env import HospitalTriageEnv, Action, ActionType
-from openai import OpenAI
+import time
+print("FILE STARTED")
 
-# -------------------------------
-# ENV VARIABLES (REQUIRED FOR CHECKLIST)
-# -------------------------------
+from hospital_env import HospitalTriageEnv, Action, ActionType
+
+# REQUIRED ENV VARIABLES
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-HF_TOKEN = os.getenv("HF_TOKEN")  # no default
-# OpenAI Client (REQUIRED EVEN IF NOT USED)
-client = None
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-if os.getenv("OPENAI_API_KEY"):
-    client = OpenAI(
-        base_url=API_BASE_URL,
-        api_key=os.getenv("OPENAI_API_KEY")
-    )
 
-# -------------------------------
-# RULE-BASED TRIAGE LOGIC (SAFE)
-# -------------------------------
-def get_triage_decision(observation, client=None, model_name=None):
+# RULE-BASED TRIAGE
+def get_triage_decision(observation):
     obs = observation.observation
 
     symptoms = " ".join(obs.symptoms).lower()
     vitals = obs.vitals
 
-    # Default
     action_type = ActionType.WAIT
     priority = 0.3
     reasoning = "Stable condition"
 
-    # Critical
     if (
         "chest pain" in symptoms
         or "unconscious" in symptoms
@@ -42,7 +30,6 @@ def get_triage_decision(observation, client=None, model_name=None):
         priority = 0.95
         reasoning = "Critical symptoms detected"
 
-    # Moderate
     elif (
         "fever" in symptoms
         or "pain" in symptoms
@@ -58,12 +45,10 @@ def get_triage_decision(observation, client=None, model_name=None):
         reasoning=reasoning,
     )
 
-# -------------------------------
-# MAIN EXECUTION LOOP
-# -------------------------------
+
 def main():
-    print("[START]")
     print(" MAIN STARTED")
+    print("[START]")
 
     env = HospitalTriageEnv()
     observation = env.reset()
@@ -77,9 +62,7 @@ def main():
 
         print("[STEP]")
 
-        # ✅ PASS client + model (IMPORTANT)
-        action = get_triage_decision(observation, client, MODEL_NAME)
-
+        action = get_triage_decision(observation)
         obs = observation.observation
 
         print(f"Patient ID: {obs.patient_id}")
@@ -91,7 +74,7 @@ def main():
         try:
             next_observation, reward, done, info = env.step(action)
         except Exception as e:
-            print("Error during step:", e)
+            print("Error:", e)
             break
 
         print(f"Reward: {reward:.3f}")
@@ -110,47 +93,11 @@ def main():
     print(f"Final Score: {final_score:.3f}")
     print("[END]")
 
-import time
-
-# KEEP CONTAINER ALIVE (VERY IMPORTANT)
-while True:
-    time.sleep(60)
+    # KEEP CONTAINER ALIVE
+    while True:
+        time.sleep(60)
 
 
-# -------------------------------
-# OPENENV COMPATIBILITY (REQUIRED)
-# -------------------------------
-
-_env_instance = None
-
-def reset():
-    global _env_instance
-    _env_instance = HospitalTriageEnv()
-    obs = _env_instance.reset()
-    return obs
-
-
-def step(action_dict):
-    global _env_instance
-
-    action = Action(
-        action_type=ActionType(action_dict["action_type"]),
-        priority_score=action_dict["priority_score"],
-        reasoning=action_dict.get("reasoning", "")
-    )
-
-    obs, reward, done, info = _env_instance.step(action)
-
-    return {
-        "observation": obs,
-        "reward": reward,
-        "done": done,
-        "info": info
-    }
-
-
-def state():
-    return {"status": "running"}
+# 🔥 THIS LINE IS CRITICAL
 if __name__ == "__main__":
     main()
-    # -------------------------------

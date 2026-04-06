@@ -1,0 +1,8 @@
+[project]
+name = "hospital-triage-ai"
+version = "0.1.0"
+description = "Hospital triage system"
+dependencies = [
+    "fastapi",
+    "uvicorn"
+]

@@ -1,22 +1,16 @@
 ---
 title: Hospital Triage AI
-emoji: "🏥"
+emoji: "hospital"
 colorFrom: blue
 colorTo: green
 sdk: docker
 app_port: 7860
 ---
 
-# 🏥 Hospital Triage AI
+# Hospital Triage AI
 
 ## API Endpoints
 
-- GET / → Health check  
-- POST /reset → Reset environment  
-- POST /step → Perform triage step  
-
-## Tech Stack
-
-- FastAPI  
-- OpenEnv  
-- Docker  
+- GET / → Health check
+- POST /reset → Reset environment
+- POST /step → Perform triage step

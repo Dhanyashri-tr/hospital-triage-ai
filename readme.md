@@ -1,6 +1,6 @@
 ---
 title: Hospital Triage AI
-emoji: "hospital"
+emoji: "🏥"
 colorFrom: blue
 colorTo: green
 sdk: docker

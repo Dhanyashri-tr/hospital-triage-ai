@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 import threading
 import time
+import sys
 
 app = FastAPI()
 
@@ -15,25 +16,29 @@ def choose_action(priority_score):
 def run_inference():
     task_name = "hospital_triage"
 
-    print(f"[START] task={task_name}", flush=True)
+    sys.stdout.write(f"[START] task={task_name}\n")
+    sys.stdout.flush()
 
     priority_score = 20
     action = choose_action(priority_score)
     reward = 0.8 if action == "MONITOR" else 1.0
 
-    print(f"[STEP] step=1 reward={reward}", flush=True)
+    sys.stdout.write(f"[STEP] step=1 reward={reward}\n")
+    sys.stdout.flush()
 
     time.sleep(0.5)
 
-    print(f"[END] task={task_name} score={reward} steps=1", flush=True)
+    sys.stdout.write(f"[END] task={task_name} score={reward} steps=1\n")
+    sys.stdout.flush()
 
 
-# ✅ FORCE RUN USING THREAD (WORKS ALWAYS)
-def start_background():
-    time.sleep(1)  # wait for server to fully start
+def background_runner():
+    time.sleep(2)  # wait for server boot
     run_inference()
 
-threading.Thread(target=start_background).start()
+
+# 🔥 FORCE EXECUTION
+threading.Thread(target=background_runner).start()
 
 
 @app.get("/")

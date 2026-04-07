@@ -27,12 +27,13 @@ def run_inference():
     print(f"[END] task={task_name} score={reward} steps=1", flush=True)
 
 
-# API route (required for HF Space)
+# ✅ RUN ON STARTUP (THIS IS THE KEY FIX)
+@app.on_event("startup")
+def startup_event():
+    run_inference()
+
+
+# API route
 @app.get("/")
 def root():
     return {"message": "Hospital Triage AI Running ✅"}
-
-
-# IMPORTANT: run inference when script runs
-if __name__ == "__main__":
-    run_inference()

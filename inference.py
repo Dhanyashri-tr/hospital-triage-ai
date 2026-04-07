@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import threading
 import time
 
 app = FastAPI()
@@ -27,13 +28,14 @@ def run_inference():
     print(f"[END] task={task_name} score={reward} steps=1", flush=True)
 
 
-# ✅ RUN ON STARTUP (THIS IS THE KEY FIX)
-@app.on_event("startup")
-def startup_event():
+# ✅ FORCE RUN USING THREAD (WORKS ALWAYS)
+def start_background():
+    time.sleep(1)  # wait for server to fully start
     run_inference()
 
+threading.Thread(target=start_background).start()
 
-# API route
+
 @app.get("/")
 def root():
     return {"message": "Hospital Triage AI Running ✅"}

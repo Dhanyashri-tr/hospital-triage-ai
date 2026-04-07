@@ -116,11 +116,3 @@ async def state():
         "patient_id": obs.patient_id,
         "symptoms": obs.symptoms
     }
-
-
-# -------------------------------
-# RUN SERVER (FIXED PORT ✅)
-# -------------------------------
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)

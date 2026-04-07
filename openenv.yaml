@@ -1,0 +1,7 @@
+env: hospital_triage
+
+entrypoint: inference.py
+
+endpoints:
+  reset: /reset
+  step: /step

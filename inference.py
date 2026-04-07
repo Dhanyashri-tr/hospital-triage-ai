@@ -1,5 +1,7 @@
-import sys
+from fastapi import FastAPI
 import time
+
+app = FastAPI()
 
 def choose_action(priority_score):
     if priority_score >= 25:
@@ -12,26 +14,25 @@ def choose_action(priority_score):
 def run_inference():
     task_name = "hospital_triage"
 
-    # START block
     print(f"[START] task={task_name}", flush=True)
 
-    # Example input (you can modify later)
     priority_score = 20
-
-    # Step 1
     action = choose_action(priority_score)
     reward = 0.8 if action == "MONITOR" else 1.0
 
     print(f"[STEP] step=1 reward={reward}", flush=True)
 
-    # Simulate processing
     time.sleep(0.5)
 
-    # END block
-    final_score = reward
-    total_steps = 1
+    print(f"[END] task={task_name} score={reward} steps=1", flush=True)
 
-    print(f"[END] task={task_name} score={final_score} steps={total_steps}", flush=True)
 
+# API route (required for HF Space)
+@app.get("/")
+def root():
+    return {"message": "Hospital Triage AI Running ✅"}
+
+
+# IMPORTANT: run inference when script runs
 if __name__ == "__main__":
     run_inference()

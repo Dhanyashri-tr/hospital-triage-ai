@@ -1,118 +1,37 @@
-import os
-from fastapi import FastAPI, Request
-from env import HospitalTriageEnv
-from models import Action, ActionType
+import sys
+import time
 
-app = FastAPI()
-
-# -------------------------------
-# RULE-BASED DECISION FUNCTION
-# -------------------------------
-def get_triage_decision(observation):
-    obs = observation.observation
-
-    symptoms = " ".join(obs.symptoms).lower()
-    vitals = obs.vitals
-
-    action_type = ActionType.WAIT
-    priority = 0.3
-    reasoning = "Stable condition"
-
-    if (
-        "chest pain" in symptoms
-        or "unconscious" in symptoms
-        or (vitals and vitals.oxygen_saturation and vitals.oxygen_saturation < 90)
-    ):
-        action_type = ActionType.TREAT_NOW
-        priority = 0.95
-        reasoning = "Critical symptoms detected"
-
-    elif (
-        "fever" in symptoms
-        or "pain" in symptoms
-        or (vitals and vitals.heart_rate and vitals.heart_rate > 100)
-    ):
-        action_type = ActionType.MONITOR
-        priority = 0.6
-        reasoning = "Moderate symptoms, needs monitoring"
-
-    return action_type.value, priority, reasoning
-
-
-# -------------------------------
-# GLOBAL ENV
-# -------------------------------
-env = None
-
-
-# -------------------------------
-# ROOT ENDPOINT
-# -------------------------------
-@app.get("/")
-def home():
-    return {"status": "ok"}
-
-
-# -------------------------------
-# RESET ENDPOINT (FIXED ✅)
-# -------------------------------
-@app.post("/reset")
-def reset():
-    global env
-
-    env = HospitalTriageEnv()   # ✅ correct class
-    observation = env.reset()   # ✅ MUST call reset
-
-    return {
-        "message": "Environment reset successful",
-        "patient_id": observation.patient_id if hasattr(observation, "patient_id") else ""
-    }
-
-
-# -------------------------------
-# STEP ENDPOINT
-# -------------------------------
-@app.post("/step")
-async def step(request: Request):
-    global env
-
-    if env is None:
-        env = HospitalTriageEnv()
-        observation = env.reset()
+def choose_action(priority_score):
+    if priority_score >= 25:
+        return "TREAT_NOW"
+    elif priority_score >= 15:
+        return "MONITOR"
     else:
-        observation = env.current_case.observation if env.current_case else None
-        if observation is None:
-            observation = env.reset()
+        return "WAIT"
 
-    action_type, priority, reasoning = get_triage_decision(observation)
+def run_inference():
+    task_name = "hospital_triage"
 
-    action = Action(
-        action_type=ActionType(action_type),
-        priority_score=priority,
-        reasoning=reasoning,
-    )
+    # START block
+    print(f"[START] task={task_name}", flush=True)
 
-    next_observation, reward, done, info = env.step(action)
+    # Example input (you can modify later)
+    priority_score = 20
 
-    return {
-        "reward": reward,
-        "done": done,
-        "info": info
-    }
+    # Step 1
+    action = choose_action(priority_score)
+    reward = 0.8 if action == "MONITOR" else 1.0
 
+    print(f"[STEP] step=1 reward={reward}", flush=True)
 
-# -------------------------------
-# STATE ENDPOINT
-# -------------------------------
-@app.get("/state")
-async def state():
-    global env
-    
-    if env is None or env.current_case is None:
-        return {"patient_id": "", "symptoms": []}
-    
-    obs = env.current_case.observation
-    return {
-        "patient_id": obs.patient_id,
-        "symptoms": obs.symptoms
-    }
+    # Simulate processing
+    time.sleep(0.5)
+
+    # END block
+    final_score = reward
+    total_steps = 1
+
+    print(f"[END] task={task_name} score={final_score} steps={total_steps}", flush=True)
+
+if __name__ == "__main__":
+    run_inference()

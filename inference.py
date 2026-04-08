@@ -1,5 +1,15 @@
 from tasks import choose_action
 from litellm import completion
+from litellm import completion
+
+def get_llm_response():
+    response = completion(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "user", "content": "Patient has fever and chest pain. What is priority?"}
+        ]
+    )
+    return response
 
 def run_task():
     task_name = "triage"

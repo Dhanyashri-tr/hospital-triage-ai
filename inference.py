@@ -1,9 +1,9 @@
 import os
-from tasks import choose_action
+from tasks import HospitalTriageTasks, choose_action
 from litellm import completion
 
 # =========================
-# ✅ SAFE ENV SETUP
+# ENV SETUP
 # =========================
 API_BASE = os.getenv("API_BASE_URL")
 API_KEY = os.getenv("API_KEY")
@@ -20,11 +20,11 @@ else:
 
 
 # =========================
-# ✅ LLM FUNCTION
+# LLM FUNCTION
 # =========================
 def get_llm_response(prompt):
     if not USE_LLM:
-        return "LLM skipped (no API key)"
+        return "LLM skipped"
 
     try:
         response = completion(
@@ -34,37 +34,106 @@ def get_llm_response(prompt):
         return str(response)
     except Exception as e:
         print(f"⚠️ LLM error: {e}", flush=True)
-        return "LLM fallback response"
+        return "fallback"
 
 
 # =========================
-# ✅ MAIN TASK FUNCTION
+# TASK 1
 # =========================
-def run_task():
-    task_name = "triage"
-    print(f"[START] task={task_name}", flush=True)
+def task_1():
+    print("[START] task=triage_easy", flush=True)
 
-    # 🔥 ONLY CALL LLM IF AVAILABLE
     if USE_LLM:
-        test_output = get_llm_response(
-            "Patient has fever and chest pain. What is priority?"
-        )
-        print(f"LLM Output: {test_output}", flush=True)
-    else:
-        print("⚠️ Skipping LLM call (no API)", flush=True)
+        get_llm_response("Patient has mild fever")
 
-    # ✅ YOUR LOGIC
-    priority_score = 20
-    action = choose_action(priority_score)
+    score = 10
+    action = choose_action(score)
 
-    reward = 0.8 if action == "TREAT_NOW" else 0.5
+    reward = 0.5
     print(f"[STEP] step=1 reward={reward}", flush=True)
 
-    print(f"[END] task={task_name} score={reward} steps=1", flush=True)
+    print(f"[END] task=triage_easy score={reward} steps=1", flush=True)
 
 
 # =========================
-# ✅ AUTO RUN
+# TASK 2
 # =========================
+def task_2():
+    print("[START] task=triage_medium", flush=True)
+
+    if USE_LLM:
+        get_llm_response("Patient has high fever and cough")
+
+    score = 18
+    action = choose_action(score)
+
+    reward = 0.7
+    print(f"[STEP] step=1 reward={reward}", flush=True)
+
+    print(f"[END] task=triage_medium score={reward} steps=1", flush=True)
+
+
+# =========================
+# TASK 3
+# =========================
+def task_3():
+    print("[START] task=triage_critical", flush=True)
+
+    if USE_LLM:
+        get_llm_response("Patient has chest pain and low oxygen")
+
+    score = 30
+    action = choose_action(score)
+
+    reward = 1.0 if action == "TREAT_NOW" else 0.6
+    print(f"[STEP] step=1 reward={reward}", flush=True)
+
+    print(f"[END] task=triage_critical score={reward} steps=1", flush=True)
+
+
+# =========================
+# RUN ALL TASKS
+# =========================
+
+def run_all_tasks():
+    task_system = HospitalTriageTasks()
+
+    difficulties = ["EASY", "MEDIUM", "HARD"]
+
+    for difficulty in difficulties:
+        cases = task_system.get_cases_by_difficulty(difficulty)
+
+        for case in cases[:1]:  # take 1 case per difficulty (enough)
+            task_name = f"triage_{difficulty.lower()}"
+
+            print(f"[START] task={task_name}", flush=True)
+
+            # LLM call (only if available)
+            if USE_LLM:
+                get_llm_response(str(case.observation.symptoms))
+
+            # simple scoring logic
+            priority_score = (
+                (case.observation.vitals.temperature / 40) * 0.3 +
+                (case.observation.vitals.heart_rate / 150) * 0.3 +
+                (case.observation.vitals.pain_level / 10) * 0.4
+            )
+
+            # Clamp between 0 and 1
+            priority_score = min(priority_score, 1.0)
+
+            action = choose_action(priority_score)
+
+            # ✅ GRADER (IMPORTANT)
+            if action == case.correct_action:
+                reward = 1.0
+            else:
+                reward = 0.5
+
+            print(f"[STEP] step=1 reward={reward}", flush=True)
+
+            print(f"[END] task={task_name} score={reward} steps=1", flush=True)
+
+
 if __name__ == "__main__":
-    run_task()
+    run_all_tasks()

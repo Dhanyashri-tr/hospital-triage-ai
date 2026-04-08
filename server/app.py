@@ -13,6 +13,9 @@ def home():
         "status": "Server is running",
         "llm_response": response
     }
+@app.post("/reset")
+def reset():
+    return {"status": "reset successful"}
 
 
 # ✅ REQUIRED MAIN FUNCTION

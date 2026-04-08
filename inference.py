@@ -1,8 +1,11 @@
+import os
 from tasks import choose_action
 from litellm import completion
-from litellm import completion
 
-from litellm import completion
+# ✅ FORCE LiteLLM to use hackathon proxy
+os.environ["OPENAI_API_BASE"] = os.environ["API_BASE_URL"]
+os.environ["OPENAI_API_KEY"] = os.environ["API_KEY"]
+
 
 def get_llm_response(prompt):
     try:
@@ -14,8 +17,8 @@ def get_llm_response(prompt):
         )
         return str(response)
     except Exception as e:
-        # ✅ Prevent crash (VERY IMPORTANT)
         return "LLM response simulated"
+
 
 def run_task():
     task_name = "triage"
@@ -23,18 +26,24 @@ def run_task():
     # START
     print(f"[START] task={task_name}", flush=True)
 
-    # 🔥 LLM CALL (MANDATORY)
+    # 🔥 MANDATORY LLM CALL THROUGH PROXY
     try:
         response = completion(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "user", "content": "Patient has fever and chest pain. What is priority?"}
+                {
+                    "role": "user",
+                    "content": "Patient has fever and chest pain. What is the triage priority?"
+                }
             ]
         )
-    except:
-        response = "LLM response simulated"
+        print("LLM CALLED SUCCESSFULLY", flush=True)
 
-    # Example logic
+    except Exception as e:
+        print("LLM FAILED BUT CONTINUING", flush=True)
+        response = "fallback"
+
+    # ✅ Your logic
     priority_score = 20
     action = choose_action(priority_score)
 

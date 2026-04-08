@@ -327,5 +327,11 @@ class HospitalTriageTasks:
             difficulty="HARD",
             explanation="Multiple trauma with hypovolemic shock - very low blood pressure, high heart rate, and decreased consciousness. Immediate life-saving intervention required."
         ))
-        
         return cases
+def choose_action(priority_score):
+        if priority_score >= 0.8:
+            return "TREAT_NOW"
+        elif priority_score >= 0.4:
+            return "MONITOR"
+        else:
+            return "WAIT"

@@ -2,7 +2,7 @@ from tasks import choose_action
 from litellm import completion
 from litellm import completion
 
-def get_llm_response():
+def get_llm_response(prompt):
     response = completion(
         model="gpt-3.5-turbo",
         messages=[

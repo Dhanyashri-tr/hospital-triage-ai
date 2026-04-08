@@ -7,7 +7,8 @@ def get_llm_response(prompt):
         model="gpt-3.5-turbo",
         messages=[
             {"role": "user", "content": "Patient has fever and chest pain. What is priority?"}
-        ]
+        ],
+        api_key="test" 
     )
     return response
 

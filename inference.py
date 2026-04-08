@@ -124,11 +124,10 @@ def run_all_tasks():
 
             action = choose_action(priority_score)
 
-            # ✅ GRADER (IMPORTANT)
             if action == case.correct_action:
-                reward = 1.0
+                reward = 0.85
             else:
-                reward = 0.5
+                reward = 0.25
 
             print(f"[STEP] step=1 reward={reward}", flush=True)
 

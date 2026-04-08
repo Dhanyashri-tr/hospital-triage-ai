@@ -8,18 +8,24 @@ from litellm import completion
 API_BASE = os.getenv("API_BASE_URL")
 API_KEY = os.getenv("API_KEY")
 
+USE_LLM = False
+
 if API_BASE and API_KEY:
     os.environ["OPENAI_API_BASE"] = API_BASE
     os.environ["OPENAI_API_KEY"] = API_KEY
+    USE_LLM = True
     print("✅ Using injected LiteLLM proxy", flush=True)
 else:
-    print("⚠️ No API env found, running fallback mode", flush=True)
+    print("⚠️ No API env found, skipping LLM calls", flush=True)
 
 
 # =========================
 # ✅ LLM FUNCTION
 # =========================
 def get_llm_response(prompt):
+    if not USE_LLM:
+        return "LLM skipped (no API key)"
+
     try:
         response = completion(
             model="gpt-3.5-turbo",
@@ -36,28 +42,29 @@ def get_llm_response(prompt):
 # =========================
 def run_task():
     task_name = "triage"
-
-    # START
     print(f"[START] task={task_name}", flush=True)
 
-    # 🔥 FORCE LLM CALL (CRITICAL FOR VALIDATION)
-    test_output = get_llm_response("Patient has fever and chest pain. What is priority?")
-    print(f"LLM Output: {test_output}", flush=True)
+    # 🔥 ONLY CALL LLM IF AVAILABLE
+    if USE_LLM:
+        test_output = get_llm_response(
+            "Patient has fever and chest pain. What is priority?"
+        )
+        print(f"LLM Output: {test_output}", flush=True)
+    else:
+        print("⚠️ Skipping LLM call (no API)", flush=True)
 
-    # ✅ YOUR ORIGINAL LOGIC
+    # ✅ YOUR LOGIC
     priority_score = 20
     action = choose_action(priority_score)
 
-    # STEP
     reward = 0.8 if action == "TREAT_NOW" else 0.5
     print(f"[STEP] step=1 reward={reward}", flush=True)
 
-    # END
     print(f"[END] task={task_name} score={reward} steps=1", flush=True)
 
 
 # =========================
-# ✅ AUTO RUN (IMPORTANT)
+# ✅ AUTO RUN
 # =========================
 if __name__ == "__main__":
     run_task()

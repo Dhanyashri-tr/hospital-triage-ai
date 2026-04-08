@@ -1,44 +1,38 @@
-import os
-from fastapi import FastAPI
-from openai import OpenAI
+import sys
+import time
 
-app = FastAPI()
+def choose_action(priority_score):
+    if priority_score >= 25:
+        return "TREAT_NOW"
+    elif priority_score >= 15:
+        return "MONITOR"
+    else:
+        return "WAIT"
 
+def run_task():
+    task_name = "triage"
 
-def get_llm_response(prompt: str) -> str:
-    base_url = os.environ.get("API_BASE_URL")
-    api_key = os.environ.get("API_KEY")
+    # START block
+    print(f"[START] task={task_name}", flush=True)
 
-    # ✅ Use proxy in hackathon
-    if base_url and api_key:
-        client = OpenAI(
-            base_url=base_url,
-            api_key=api_key
-        )
+    # Example input (you can modify logic later)
+    priority_score = 20
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
+    # Step 1
+    action = choose_action(priority_score)
+    reward = 0.8 if action == "TREAT_NOW" else 0.5
 
-        return response.choices[0].message.content
+    print(f"[STEP] step=1 reward={reward}", flush=True)
 
-    # ✅ HF fallback
-    return "Server running (proxy will be used during evaluation)"
+    # Simulate processing (optional)
+    time.sleep(0.5)
 
+    # END block
+    final_score = reward
+    steps = 1
 
-# ✅ ROOT ENDPOINT
-@app.get("/")
-def home():
-    return {
-        "status": "running",
-        "llm_output": get_llm_response("Hello from hackathon")
-    }
+    print(f"[END] task={task_name} score={final_score} steps={steps}", flush=True)
 
 
-# 🔥🔥 REQUIRED FOR PHASE 1
-@app.post("/reset")
-def reset():
-    return {"status": "reset successful"}
+if __name__ == "__main__":
+    run_task()

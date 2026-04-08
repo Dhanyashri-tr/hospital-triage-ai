@@ -1,4 +1,4 @@
 fastapi
 uvicorn
 openai
-litellm
+litellm==1.38.0

@@ -1,18 +1,15 @@
 from fastapi import FastAPI
-from inference import get_llm_response  # ✅ IMPORT LLM FUNCTION
 
 app = FastAPI()
 
 
 @app.get("/")
 def home():
-    # ✅ THIS LINE IS CRITICAL (triggers API call)
-    response = get_llm_response("Hello from API")
-
     return {
-        "status": "Server is running",
-        "llm_response": response
+        "status": "Server is running"
     }
+
+
 @app.post("/reset")
 def reset():
     return {"status": "reset successful"}

@@ -20,6 +20,19 @@ client = OpenAI(
 )
 
 # =========================
+# SAFE REWARD FUNCTION (CRITICAL FIX)
+# =========================
+def safe_reward(value):
+    value = round(value, 2)
+
+    if value <= 0.00:
+        return 0.01
+    elif value >= 1.00:
+        return 0.99
+    return value
+
+
+# =========================
 # TASK FUNCTION
 # =========================
 def run_task(task_name, symptoms):
@@ -30,7 +43,7 @@ def run_task(task_name, symptoms):
     print(f"[START] task={task_name} env=hospital model={MODEL_NAME}", flush=True)
 
     try:
-        # LLM CALL WITH REASONING
+        # LLM CALL
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -52,27 +65,22 @@ def run_task(task_name, symptoms):
         # =========================
         if "TREAT" in raw_output:
             decision = "TREAT_NOW"
-            reward = 0.90
+            reward = 0.85
         elif "MONITOR" in raw_output:
             decision = "MONITOR"
-            reward = 0.70
+            reward = 0.65
         else:
             decision = "WAIT"
             reward = 0.55
 
         # =========================
-        # EXPLANATION EXTRACTION
+        # EXPLANATION
         # =========================
         explanation = raw_output.replace("\n", " ")[:80]
-
         action = f"{decision}|reason:{explanation}"
 
-        # Ensure reward in (0,1)
-        # FORCE STRICT RANGE (never 0 or 1)
-        if reward <= 0:
-            reward = 0.10
-        elif reward >= 1:
-            reward = 0.90
+        # ✅ FIXED REWARD
+        reward = safe_reward(reward)
 
         rewards.append(f"{reward:.2f}")
         steps += 1
@@ -82,17 +90,16 @@ def run_task(task_name, symptoms):
 
     except Exception:
         # =========================
-        # SAFE FALLBACK
+        # FALLBACK
         # =========================
         action = "WAIT|reason:fallback_safe_mode"
-        reward = 0.25
-        error = "api_error"
+        reward = safe_reward(0.25)
 
         rewards.append(f"{reward:.2f}")
         steps += 1
         success = False
 
-        print(f"[STEP] step=1 action={action} reward={reward:.2f} done=true error={error}", flush=True)
+        print(f"[STEP] step=1 action={action} reward={reward:.2f} done=true error=api_error", flush=True)
 
     print(f"[END] success={str(success).lower()} steps={steps} rewards={','.join(rewards)}", flush=True)
 

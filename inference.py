@@ -58,7 +58,7 @@ def run_task(task_name, symptoms):
             reward = 0.70
         else:
             decision = "WAIT"
-            reward = 0.50
+            reward = 0.55
 
         # =========================
         # EXPLANATION EXTRACTION
@@ -68,7 +68,11 @@ def run_task(task_name, symptoms):
         action = f"{decision}|reason:{explanation}"
 
         # Ensure reward in (0,1)
-        reward = min(max(reward, 0.01), 0.99)
+        # FORCE STRICT RANGE (never 0 or 1)
+        if reward <= 0:
+            reward = 0.10
+        elif reward >= 1:
+            reward = 0.90
 
         rewards.append(f"{reward:.2f}")
         steps += 1
@@ -81,7 +85,7 @@ def run_task(task_name, symptoms):
         # SAFE FALLBACK
         # =========================
         action = "WAIT|reason:fallback_safe_mode"
-        reward = 0.20
+        reward = 0.25
         error = "api_error"
 
         rewards.append(f"{reward:.2f}")

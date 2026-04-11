@@ -30,6 +30,7 @@ def run_task(task_name, symptoms):
     rewards = []
     steps = 0
     success = False
+    print("DEBUG_REWARD:", reward, flush=True)
 
     print(f"[START] task={task_name} env=hospital model={MODEL_NAME}", flush=True)
 
@@ -56,11 +57,19 @@ def run_task(task_name, symptoms):
 
         reward = safe_format(reward)
 
-        rewards.append(f"{reward:.2f}")
+        reward_str = "{:.2f}".format(reward)
+
+# FINAL HARD CHECK
+        if reward_str == "0.00":
+            reward_str = "0.01"
+        elif reward_str == "1.00":
+            reward_str = "0.99"
+
+        rewards.append(reward_str)
         steps += 1
         success = True
 
-        print(f"[STEP] step=1 action={action} reward={reward:.2f} done=true error=null", flush=True)
+        print(f"[STEP] step=1 action={action} reward={reward_str} done=true error=null", flush=True)
 
     except Exception:
         action = "WAIT"

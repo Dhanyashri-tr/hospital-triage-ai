@@ -14,8 +14,7 @@ client = OpenAI(
     api_key=HF_TOKEN
 )
 
-def safe_format(value):
-    # ALWAYS return safe float in (0,1)
+def safe_reward_str(value):
     value = float(value)
 
     if value <= 0.0:
@@ -23,14 +22,23 @@ def safe_format(value):
     elif value >= 1.0:
         value = 0.99
 
-    return float(f"{value:.2f}")
+    value = round(value, 2)
+
+    reward_str = "{:.2f}".format(value)
+
+    # FINAL GUARANTEE
+    if reward_str == "0.00":
+        reward_str = "0.01"
+    elif reward_str == "1.00":
+        reward_str = "0.99"
+
+    return reward_str
 
 
 def run_task(task_name, symptoms):
     rewards = []
     steps = 0
     success = False
-    print("DEBUG_REWARD:", reward, flush=True)
 
     print(f"[START] task={task_name} env=hospital model={MODEL_NAME}", flush=True)
 
@@ -55,15 +63,7 @@ def run_task(task_name, symptoms):
             action = "WAIT"
             reward = 0.55
 
-        reward = safe_format(reward)
-
-        reward_str = "{:.2f}".format(reward)
-
-# FINAL HARD CHECK
-        if reward_str == "0.00":
-            reward_str = "0.01"
-        elif reward_str == "1.00":
-            reward_str = "0.99"
+        reward_str = safe_reward_str(reward)
 
         rewards.append(reward_str)
         steps += 1
@@ -73,13 +73,13 @@ def run_task(task_name, symptoms):
 
     except Exception:
         action = "WAIT"
-        reward = safe_format(0.25)
+        reward_str = safe_reward_str(0.25)
 
-        rewards.append(f"{reward:.2f}")
+        rewards.append(reward_str)
         steps += 1
         success = False
 
-        print(f"[STEP] step=1 action={action} reward={reward:.2f} done=true error=api_error", flush=True)
+        print(f"[STEP] step=1 action={action} reward={reward_str} done=true error=api_error", flush=True)
 
     print(f"[END] success={str(success).lower()} steps={steps} rewards={','.join(rewards)}", flush=True)
 

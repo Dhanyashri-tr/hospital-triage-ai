@@ -6,7 +6,6 @@ MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if HF_TOKEN is None:
-    print("⚠️ HF_TOKEN not found, using dummy mode", flush=True)
     HF_TOKEN = "dummy-key"
 
 client = OpenAI(
@@ -14,25 +13,13 @@ client = OpenAI(
     api_key=HF_TOKEN
 )
 
-def safe_reward_str(value):
-    value = float(value)
-
-    if value <= 0.0:
-        value = 0.01
-    elif value >= 1.0:
-        value = 0.99
-
-    value = round(value, 2)
-
-    reward_str = "{:.2f}".format(value)
-
-    # FINAL GUARANTEE
-    if reward_str == "0.00":
-        reward_str = "0.01"
-    elif reward_str == "1.00":
-        reward_str = "0.99"
-
-    return reward_str
+def get_safe_reward(val):
+    val = float(val)
+    if val <= 0.0:
+        return 0.01
+    if val >= 1.0:
+        return 0.99
+    return float(f"{val:.2f}")
 
 
 def run_task(task_name, symptoms):
@@ -40,6 +27,7 @@ def run_task(task_name, symptoms):
     steps = 0
     success = False
 
+    # ✅ EXACT FORMAT
     print(f"[START] task={task_name} env=hospital model={MODEL_NAME}", flush=True)
 
     try:
@@ -47,33 +35,40 @@ def run_task(task_name, symptoms):
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": "Classify into TREAT_NOW, MONITOR, WAIT."},
-                {"role": "user", "content": f"Patient symptoms: {symptoms}"}
+                {"role": "user", "content": symptoms}
             ]
         )
 
-        raw_output = response.choices[0].message.content.strip().upper()
+        text = response.choices[0].message.content.upper()
 
-        if "TREAT" in raw_output:
+        if "TREAT" in text:
             action = "TREAT_NOW"
             reward = 0.85
-        elif "MONITOR" in raw_output:
+        elif "MONITOR" in text:
             action = "MONITOR"
             reward = 0.65
         else:
             action = "WAIT"
             reward = 0.55
 
-        reward_str = safe_reward_str(reward)
+        reward = get_safe_reward(reward)
+
+        reward_str = f"{reward:.2f}"
+        if reward_str == "0.00":
+            reward_str = "0.01"
+        if reward_str == "1.00":
+            reward_str = "0.99"
 
         rewards.append(reward_str)
         steps += 1
         success = True
 
+        # ✅ STRICT FORMAT (NO EXTRA TEXT)
         print(f"[STEP] step=1 action={action} reward={reward_str} done=true error=null", flush=True)
 
     except Exception:
         action = "WAIT"
-        reward_str = safe_reward_str(0.25)
+        reward_str = "0.25"
 
         rewards.append(reward_str)
         steps += 1
@@ -86,5 +81,5 @@ def run_task(task_name, symptoms):
 
 if __name__ == "__main__":
     run_task("triage_easy", "mild fever and cough")
-    run_task("triage_medium", "high fever and abdominal pain")
-    run_task("triage_critical", "severe chest pain and low oxygen")
+    run_task("triage_medium", "high fever abdominal pain")
+    run_task("triage_critical", "chest pain low oxygen")

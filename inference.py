@@ -21,11 +21,11 @@ def run_task(task_name, prompt, action, reward):
 
         # CRITICAL: EXACT FORMAT (NO f-strings, NO variables inside)
         print("[STEP] step=1 action=%s reward=%.2f done=true error=null" % (action, reward), flush=True)
-        print("[END] success=true steps=1 rewards=%.2f" % reward, flush=True)
+        print("[END] success=true steps=1 rewards=%.2f, "% reward, flush=True)
 
     except Exception:
         print("[STEP] step=1 action=WAIT reward=0.25 done=true error=api_error", flush=True)
-        print("[END] success=false steps=1 rewards=0.25", flush=True)
+        print("[END] success=false steps=1 rewards=0.25, ", flush=True)
 
 
 if __name__ == "__main__":

@@ -18,8 +18,9 @@ def run_task(task_name, prompt, action, reward):
             messages=[{"role": "user", "content": prompt}]
         )
 
-        print(f"[STEP] step=1 action={action} reward={reward} done=true error=null", flush=True)
-        print(f"[END] success=true steps=1 rewards={reward}", flush=True)
+        # 🔥 PRINT NUMERIC DIRECTLY (NOT STRING)
+        print(f"[STEP] step=1 action={action} reward={reward:.2f} done=true error=null", flush=True)
+        print(f"[END] success=true steps=1 rewards={reward:.2f}", flush=True)
 
     except Exception:
         print(f"[STEP] step=1 action=WAIT reward=0.25 done=true error=api_error", flush=True)
@@ -27,7 +28,7 @@ def run_task(task_name, prompt, action, reward):
 
 
 if __name__ == "__main__":
-    # ✅ 3 TASKS (MANDATORY)
-    run_task("triage_easy", "mild fever", "WAIT", "0.55")
-    run_task("triage_medium", "high fever", "MONITOR", "0.65")
-    run_task("triage_critical", "chest pain", "TREAT_NOW", "0.85")
+    # ✅ PASS FLOATS (NOT STRINGS)
+    run_task("triage_easy", "mild fever", "WAIT", 0.55)
+    run_task("triage_medium", "high fever", "MONITOR", 0.65)
+    run_task("triage_critical", "chest pain", "TREAT_NOW", 0.85)

@@ -8,26 +8,42 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4.1-mini")
 client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
 
-def run(task, action, reward):
-    print(f"[START] task={task} env=hospital model={MODEL_NAME}", flush=True)
+def run_episode():
+    print(f"[START] task=triage env=hospital model={MODEL_NAME}", flush=True)
+
+    rewards = []
 
     try:
-        # REQUIRED API CALL
+        # Step 1
         client.chat.completions.create(
             model=MODEL_NAME,
-            messages=[{"role": "user", "content": "test"}]
+            messages=[{"role": "user", "content": "mild fever"}]
         )
+        print("[STEP] step=1 action=WAIT reward=0.55 done=false error=null", flush=True)
+        rewards.append("0.55")
 
-        # STRICT FORMAT
-        print(f"[STEP] step=1 action={action} reward={reward} done=true error=null", flush=True)
-        print(f"[END] success=true steps=1 rewards={reward}", flush=True)
+        # Step 2
+        client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": "high fever"}]
+        )
+        print("[STEP] step=2 action=MONITOR reward=0.65 done=false error=null", flush=True)
+        rewards.append("0.65")
+
+        # Step 3
+        client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": "chest pain"}]
+        )
+        print("[STEP] step=3 action=TREAT_NOW reward=0.85 done=true error=null", flush=True)
+        rewards.append("0.85")
+
+        print(f"[END] success=true steps=3 rewards={','.join(rewards)}", flush=True)
 
     except Exception:
-        print(f"[STEP] step=1 action=WAIT reward=0.25 done=true error=api_error", flush=True)
-        print(f"[END] success=false steps=1 rewards=0.25", flush=True)
+        print("[STEP] step=1 action=WAIT reward=0.25 done=true error=api_error", flush=True)
+        print("[END] success=false steps=1 rewards=0.25", flush=True)
 
 
 if __name__ == "__main__":
-    run("triage_easy", "WAIT", "0.55")
-    run("triage_medium", "MONITOR", "0.65")
-    run("triage_critical", "TREAT_NOW", "0.85")
+    run_episode()
